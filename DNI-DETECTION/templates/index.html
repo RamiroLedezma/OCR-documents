@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Analizador de Documentos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2rem;
+            background-color: #f7f7f7;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        input[type="file"] {
+            display: block;
+            margin: 1rem 0;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        pre {
+            background: #efefef;
+            padding: 1rem;
+            border-radius: 6px;
+            white-space: pre-wrap;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Analizador de Documentos</h1>
+    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" />
+    <button onclick="analizar()">📄 Analizar</button>
+
+    <h3>Resultado:</h3>
+    <pre id="resultado">Esperando archivo...</pre>
+</div>
+
+<script>
+    async function analizar() {
+        const fileInput = document.getElementById("fileInput");
+        const resultado = document.getElementById("resultado");
+
+        if (!fileInput.files.length) {
+            resultado.textContent = "⚠️ Por favor selecciona un archivo.";
+            resultado.className = "error";
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = async function () {
+            let base64String = reader.result.split(',')[1];
+
+            try {
+                const response = await fetch('/analizar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ archivo_base64: base64String })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultado.className = "";
+                    resultado.textContent = JSON.stringify(data, null, 2);
+                } else {
+                    resultado.className = "error";
+                    resultado.textContent = "❌ Error: " + (data.error || "desconocido");
+                }
+
+            } catch (error) {
+                resultado.className = "error";
+                resultado.textContent = "❌ Error de red o del servidor.";
+            }
+        };
+
+        reader.readAsDataURL(file);
+    }
+</script>
+</body>
+</html>
